@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from "react";
-import { FileText, Brain, AlertTriangle, CheckCircle, Clock, MapPin, ChevronRight, Upload, Zap, BookOpen, Scale, Loader2, X, FileSearch } from "lucide-react";
+import { useState } from "react";
+import { FileText, Brain, AlertTriangle, CheckCircle, Clock, MapPin, ChevronRight, Upload, Zap, BookOpen, Scale, Loader2, X, FileSearch, Lock } from "lucide-react";
 
 // ----- Client-side FERC text analysis helpers -----
 
@@ -443,106 +443,33 @@ function DocumentCard({ doc, isExpanded, onToggle }) {
 }
 
 function UploadAnalyzer() {
-  const [file, setFile] = useState(null);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [error, setError] = useState(null);
-  const [analysis, setAnalysis] = useState(null);
-  const [dragOver, setDragOver] = useState(false);
-  const inputRef = useRef(null);
-
-  const processFile = useCallback(async (f) => {
-    if (!f) return;
-    setFile(f);
-    setAnalyzing(true);
-    setError(null);
-    setAnalysis(null);
-    try {
-      const extracted = await extractText(f);
-      const text = typeof extracted === "string" ? extracted : extracted.text;
-      const pdfPages = typeof extracted === "string" ? null : extracted.pages;
-      if (!text || text.trim().length < 50) {
-        throw new Error("Could not extract meaningful text from this file. It may be a scanned PDF without OCR.");
-      }
-      const result = analyzeText(text, pdfPages);
-      setAnalysis({ ...result, excerpt: text.slice(0, 1200) });
-    } catch (err) {
-      setError(err.message || "Failed to analyze file.");
-    } finally {
-      setAnalyzing(false);
-    }
-  }, []);
-
-  const onDrop = (e) => {
-    e.preventDefault();
-    setDragOver(false);
-    if (e.dataTransfer.files?.[0]) processFile(e.dataTransfer.files[0]);
-  };
-
-  const reset = () => {
-    setFile(null); setAnalysis(null); setError(null);
-    if (inputRef.current) inputRef.current.value = "";
-  };
-
-  const hasResult = analysis && !analyzing;
-
   return (
     <div style={{ marginBottom: 24 }}>
       <div
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={onDrop}
-        onClick={() => inputRef.current?.click()}
+        aria-disabled="true"
         style={{
-          background: dragOver ? "#EFF6FF" : "white",
+          position: "relative",
+          background: "#F8FAFC",
           borderRadius: 12, padding: 24,
-          border: `2px dashed ${dragOver ? "#3B82F6" : file ? "#10B981" : "#D1D5DB"}`,
-          textAlign: "center", cursor: "pointer", transition: "all 0.15s",
+          border: "2px dashed #D1D5DB",
+          textAlign: "center",
+          cursor: "not-allowed",
+          opacity: 0.85,
         }}
       >
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".pdf,.txt,application/pdf,text/plain"
-          onChange={(e) => processFile(e.target.files?.[0])}
-          style={{ display: "none" }}
-        />
-        {analyzing ? (
-          <>
-            <Loader2 size={32} color="#3B82F6" style={{ margin: "0 auto 8px", animation: "spin 1s linear infinite" }} />
-            <div style={{ fontSize: 14, fontWeight: 600, color: "#1E40AF" }}>Analyzing {file?.name}…</div>
-            <div style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>Extracting text and scanning for regulatory signals</div>
-          </>
-        ) : file && !error ? (
-          <>
-            <CheckCircle size={32} color="#10B981" style={{ margin: "0 auto 8px" }} />
-            <div style={{ fontSize: 14, fontWeight: 600, color: "#065F46" }}>
-              Loaded: {file.name} <span style={{ color: "#6B7280", fontWeight: 400 }}>({(file.size / 1024).toFixed(1)} KB)</span>
-            </div>
-            <div style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>Click or drop to analyze a different file</div>
-          </>
-        ) : (
-          <>
-            <Upload size={32} color={dragOver ? "#3B82F6" : "#9CA3AF"} style={{ margin: "0 auto 8px" }} />
-            <div style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>Drop a FERC filing here, or click to browse</div>
-            <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}>PDF or TXT · parsed in your browser, nothing is uploaded to a server</div>
-          </>
-        )}
-      </div>
+        <Upload size={32} color="#9CA3AF" style={{ margin: "0 auto 8px" }} />
+        <div style={{ fontSize: 14, fontWeight: 600, color: "#6B7280" }}>Drop a FERC filing here, or click to browse</div>
+        <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}>PDF or TXT · parsed in your browser, nothing is uploaded to a server</div>
 
-      {error && (
         <div style={{
-          marginTop: 12, padding: "10px 14px", borderRadius: 8,
-          background: "#FEF2F2", border: "1px solid #FECACA", color: "#991B1B",
-          fontSize: 13, display: "flex", justifyContent: "space-between", alignItems: "center"
+          marginTop: 14, display: "inline-flex", alignItems: "center", gap: 6,
+          padding: "6px 12px", borderRadius: 999,
+          background: "#FEF3C7", color: "#92400E",
+          fontSize: 11, fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase",
         }}>
-          <span><AlertTriangle size={14} style={{ display: "inline", marginRight: 6, verticalAlign: "text-bottom" }} />{error}</span>
-          <X size={16} style={{ cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); reset(); }} />
+          <Lock size={12} /> Demo mode — uploads disabled
         </div>
-      )}
-
-      {hasResult && <AnalysisResultCard file={file} analysis={analysis} onClose={reset} />}
-
-      <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
+      </div>
     </div>
   );
 }
